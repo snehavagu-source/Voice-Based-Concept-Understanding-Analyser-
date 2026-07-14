@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice-Based Concept Understanding Analyser</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --secondary: #06b6d4;
+            --secondary-glow: rgba(6, 182, 212, 0.4);
+            --success: #10b981;
+            --danger: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: top;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 20px;
+        }
+
+        /* 🌟 Buttons & Icons: Icons inside headers flex seamlessly */
+        h1, h2, h3 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #ffffff, #c7d2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            justify-content: center;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 35px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            
+            /* 🌟 Standard flat solid background color with no outer glow effects */
+            background: var(--primary);
+            box-shadow: none; 
+        }
+
+        /* 🌟 Hover చేసినప్పుడు మాత్రమే Glow dropshadows apply అవుతాయి */
+        button:hover {
+            box-shadow: 0 4px 14px var(--primary-glow);
+            transform: translateY(-1px);
+        }
+
+        #recordBtn.recording {
+            background: var(--danger) !important;
+            box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4) !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.6); }
+            70% { box-shadow: 0 0 0 12px rgba(244, 63, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+        }
+
+        /* 🌟 Upload బటన్ - Standard flat solid background */
+        #uploadBtn { 
+            background: #0891b2; 
+            box-shadow: none;
+        }
+        #uploadBtn:hover {
+            box-shadow: 0 4px 14px var(--secondary-glow);
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border: 1px dashed rgba(255,255,255,0.15);
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            font-size: 16px;
+            color: var(--secondary);
+            font-weight: 600;
+            padding: 20px;
+            background: rgba(6, 182, 212, 0.1);
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .result-box {
+            display: none;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .score-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--secondary);
+            margin-bottom: 20px;
+        }
+
+        .score-badge {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 35px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(30, 41, 59, 0.5);
+            text-align: left;
+        }
+
+        th, td {
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .pdf-btn {
+            background: #10b981;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" style="text-align: center;">
+    <h1><i class="fa-solid fa-microphone-lines" style="color: var(--secondary);"></i> Concept Understanding Analyser</h1>
+    <div class="subtitle">AI-Powered Academic Evaluation & Speech Fluency Dashboard</div>
+
+    <div style="margin-bottom: 25px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;">
+        <label style="color: #ffffff; font-weight: 600; display: block; margin-bottom: 8px;"><i class="fa-solid fa-user-graduate" style="color: var(--secondary);"></i> Student Name / ID:</label>
+        <input type="text" id="studentNameInput" placeholder="Enter your name before recording/uploading" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(15,23,42,0.6); color: white; font-size: 15px; box-sizing: border-box;">
+    </div>
+
+    <div class="grid-layout">
+        <div class="card">
+            <h3><i class="fa-solid fa-circle-dot" style="color: var(--danger);"></i> Live Recording</h3>
+            <button id="recordBtn"><i class="fa-solid fa-microphone"></i> Start Recording</button>
+            <p id="recordStatus" style="color: #94a3b8; font-size: 13px; margin-top: 10px; min-height: 18px;"></p>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-file-arrow-up" style="color: var(--secondary);"></i> Upload Audio File</h3>
+            <input type="file" id="audioFile" accept="audio/*,video/*">
+            <button id="uploadBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Analyze File</button>
+        </div>
+    </div>
+
+    <div id="loading"><i class="fa-solid fa-spinner fa-spin"></i> Processing audio with Whisper AI & Gemini LLM... Please wait...</div>
+
+    <div id="result" class="result-box">
+        <h3><i class="fa-solid fa-square-poll-vertical" style="color: var(--secondary);"></i> Analysis Result</h3>
+        <div class="score-container">
+            <div>
+                <span style="color: var(--text-muted); font-size: 14px; font-weight: 500;">Conceptual Understanding Score</span>
+                <div id="resFeedback" style="color: #e67e22; font-weight: 700; font-size: 16px; margin-top: 4px;"></div>
+            </div>
+            <div class="score-badge" id="resScore">0%</div>
+        </div>
+        <p><strong><i class="fa-solid fa-user" style="color:var(--primary);"></i> Student Name:</strong> <span id="resStudentName" style="color: #ffffff; font-weight:bold;"></span></p>
+        <p><strong><i class="fa-solid fa-file-audio" style="color:var(--primary);"></i> File Name:</strong> <span id="resFilename" style="color: #cbd5e1;"></span></p>
+        <p><strong><i class="fa-solid fa-quote-left" style="color:var(--primary);"></i> Transcription:</strong> <span id="resTranscription" style="color: #cbd5e1; font-style: italic;"></span></p>
+        <p><strong><i class="fa-solid fa-database" style="color:var(--success);"></i> Database Status:</strong> <span id="resDB" style="color: var(--success); font-weight: 600;"></span></p>
+    </div>
+
+    <div class="chart-card" id="chartSection" style="display:none;">
+        <h3 style="margin-top:0; text-align: left; color:#ffffff;"><i class="fa-solid fa-chart-simple" style="color: var(--secondary);"></i> Speech Fluency Analytics</h3>
+        <div style="max-width: 500px; margin: 0 auto;">
+            <canvas id="fillerChart"></canvas>
+        </div>
+    </div>
+
+    <div class="history-section" style="text-align: left;">
+        <h2><i class="fa-solid fa-history" style="color: var(--primary);"></i> Past Evaluation History</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Student Name</th>
+                        <th>Timestamp</th>
+                        <th>Transcription Extract</th>
+                        <th>Score</th>
+                        <th>Feedback</th>
+                        <th style="text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let myChart = null; 
+    
+    const recordBtn = document.getElementById('recordBtn');
+    const recordStatus = document.getElementById('recordStatus');
+    const loading = document.getElementById('loading');
+    const resultBox = document.getElementById('result');
+    const chartSection = document.getElementById('chartSection');
+    const studentNameInput = document.getElementById('studentNameInput');
+
+    window.onload = loadHistoryTable;
+
+    async function loadHistoryTable() {
+        try {
+            const response = await fetch('/api/records');
+            const records = await response.json();
+            const tableBody = document.getElementById('historyTableBody');
+            tableBody.innerHTML = ""; 
+
+            if(records.length === 0) {
+                tableBody.innerHTML = "<tr><td colspan='7' style='text-align:center; color: var(--text-muted);'>No records found.</td></tr>";
+                return;
+            }
+
+            records.forEach(row => {
+                let shortText = row.transcription.length > 40 ? row.transcription.substring(0, 40) + "..." : row.transcription;
+                let nameToDisplay = row.student_name ? row.student_name : "Anonymous";
+                
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>#${row.id}</b></td>
+                    <td style="color: #67e8f9; font-weight: 600;"><i class="fa-solid fa-user-ninja"></i> ${nameToDisplay}</td>
+                    <td style="color: var(--text-muted); font-size: 13px;">${row.timestamp}</td>
+                    <td>${shortText}</td>
+                    <td style="font-weight:bold; color:#10b981; font-size: 15px;">${row.understanding_score}</td>
+                    <td><span style="font-weight:600; color:#e67e22;">${row.feedback}</span></td>
+                    <td style="text-align: center;"><a href="/download-pdf/${row.id}" target="_blank" class="pdf-btn"><i class="fa-solid fa-file-pdf"></i> PDF</a></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error("Error loading history:", err);
+        }
+    }
+
+    function updateFillerChart(stats) {
+        chartSection.style.display = "block";
+        const ctx = document.getElementById('fillerChart').getContext('2d');
+        if (myChart) { myChart.destroy(); }
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Um', 'Uh', 'Like', 'Ah'],
+                datasets: [{
+                    data: [stats.um, stats.uh, stats.like, stats.ah],
+                    backgroundColor: [
+                        'rgba(244, 63, 94, 0.85)',
+                        'rgba(6, 182, 212, 0.85)',
+                        'rgba(168, 85, 247, 0.85)',
+                        'rgba(234, 179, 8, 0.85)'
+                    ],
+                    borderColor: [
+                        '#f43f5e', '#06b6d4', '#a855f7', '#eab308'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(255, 255, 255, 0.08)' } },
+                    x: { ticks: { color: '#94a3b8', font: { weight: 'bold' } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Recording Setup
+    recordBtn.addEventListener('click', async () => {
+        let name = studentNameInput.value.trim();
+        if(!name) { alert("Please enter a Student Name/ID before recording!"); return; }
+
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            recordBtn.innerHTML = "<i class='fa-solid fa-microphone'></i> Start Recording";
+            recordBtn.classList.remove('recording');
+            recordStatus.innerText = "Stopping and processing...";
+        } else {
+            audioChunks = [];
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' });
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'live_recording.mp4');
+                    formData.append('student_name', name);
+                    sendToBackend(formData);
+                };
+                mediaRecorder.start();
+                recordBtn.innerHTML = "<i class='fa-solid fa-stop'></i> Stop Recording";
+                recordBtn.classList.add('recording');
+                recordStatus.innerHTML = "<span style='color: var(--danger); font-weight:600;'><i class='fa-solid fa-circle fa-beat'></i> Listening... Speak now...</span>";
+            } catch (err) { alert("Microphone access denied!"); }
+        }
+    });
+
+    // Upload Setup
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+        let name = studentNameInput.value.trim();
+        if(!name) { alert("Please enter a Student Name/ID before analyzing!"); return; }
+
+        const fileInput = document.getElementById('audioFile');
+        if (fileInput.files.length === 0) { alert("Please select a file first!"); return; }
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('student_name', name);
+        sendToBackend(formData);
+    });
+
+    async function sendToBackend(formData) {
+        loading.style.display = "block";
+        resultBox.style.display = "none";
+        chartSection.style.display = "none";
+        recordStatus.innerText = "";
+        try {
+            const response = await fetch('/upload-audio/', { method: 'POST', body: formData });
+            const data = await response.json();
+            loading.style.display = "none";
+            resultBox.style.display = "block";
+            
+            document.getElementById('resScore').innerText = data.understanding_score;
+            document.getElementById('resFeedback').innerText = data.feedback;
+            document.getElementById('resStudentName').innerText = data.student_name;
+            document.getElementById('resFilename').innerText = data.filename;
+            document.getElementById('resTranscription').innerText = data.transcription;
+            document.getElementById('resDB').innerText = data.database_status;
+
+            if(data.filler_stats) { updateFillerChart(data.filler_stats); }
+            loadHistoryTable();
+        } catch (error) {
+            loading.style.display = "none";
+            alert("Error connecting to server!");
+        }
+    }
+</script>
+</body>
+</html>
