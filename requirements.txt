@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+streamlit
+sentence-transformers
+librosa
+google-generativeai
+requests
+matplotlib
+whisper
+FFmpeg
